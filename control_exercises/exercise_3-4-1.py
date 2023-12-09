@@ -2,6 +2,18 @@
 import numpy as np #library for scientific computing
 from matplotlib import pyplot as plt #library to plot graphs
 
+def LSPB(q0,qf,V,tb,tf,t):
+  #start ------
+  a=V/tb
+  if 0<=t and t<=tb:
+    qd=q0+(a/2)*t**2
+  if tb<t and t<=tf-tb:
+    qd=(qf+q0-V*tf)/(2)+V*t
+  if tf-tb<t and t<=tf:
+    qd=qf-(a*tf**2)/2+a*tf*t-(a/2)*t**2
+  #end ------
+  return qd
+  
 def D_robot(m1,m2,l1,l2,lc1,lc2,Izz1,Izz2,th):
   D=np.zeros((2,2))
   t1=th[0,0]
@@ -87,22 +99,13 @@ th2=[] #array to graph, theta 2
 th1_sp=[] #array to graph, set point theta 1
 th2_sp=[] #array to graph, set point theta 2
 
-qd_f=np.array([[90.00],[20.00]])*np.pi/180
-dqd_f=np.array([[0.00],[0.00]])
-
-qd_0=np.array([[0.00],[85.00]])*np.pi/180
-dqd_0=np.array([[0.00],[0.00]])
-
+#LSPB parameters
+qd_f=np.array([[90.00],[60.00]])*np.pi/180
+qd_0=np.array([[0.00],[0.00]])*np.pi/180
 t0=0 #simulation start time
+tb=4 
 tf=20 #simulation end time
-
-
-#start---------------------------------
-a0=qd_0
-a1=dqd_0
-a2=(3*(qd_f-qd_0)-(2*dqd_0+dqd_f)*(tf-t0))/((tf-t0)**2)
-a3=(2*(qd_0-qd_f)+(dqd_0+dqd_f)*(tf-t0))/((tf-t0)**3)
-#end-----------------------------------
+V=0.01 #constant velocity in both links
 
 time_list=np.arange(t0,tf,dt)
 
@@ -113,7 +116,7 @@ for t in time_list:
   th1_sp.append(sp_q[0,0]*180/np.pi) #array to graph, set point theta 1 [deg]
   th2_sp.append(sp_q[1,0]*180/np.pi) #array to graph, set point theta 2 [deg]
   
-  sp_q=a0+a1*(t-t0)+a2*(t-t0)**2+a3*(t-t0)**3 #polynomial for trajectory interpolation
+  sp_q=LSPB(qd_0,qd_f,V,tb,tf,t) #Linear Segments with Parabolic Blends
 
   D=D_robot(m1,m2,l1,l2,lc1,lc2,Izz1,Izz2,q)
   C=C_robot(m1,m2,l1,l2,lc1,lc2,Izz1,Izz2,q,dq)
@@ -146,6 +149,6 @@ plt.grid()
 
 plt.title("Trajectory interpolation method")
 plt.xlabel("Time [s]")
-plt.ylabel("Angular position [deg]")
-# Considering the control law (4) and (5) where:
+plt.ylabel("Angular position [rad]")
+
 plt.show()
